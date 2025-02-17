@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alpine-sshd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alpine-sshd
+  template:
+    metadata:
+      labels:
+        app: alpine-sshd
+    spec:
+      containers:
+      - name: alpine
+        image: alpine
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            apk update;
+            apk upgrade;
+            apk add --no-cache openssh;
+            echo "PermitRootLogin yes" >> /etc/ssh/sshd_config;
+            echo "root:tester" | chpasswd;
+            ssh-keygen -A;
+            /usr/sbin/sshd -D;
+        securityContext:
+          privileged: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alpine-sshd
+spec:
+  selector:
+    app: alpine-sshd
+  ports:
+    - port: 22
+      targetPort: 22
